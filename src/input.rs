@@ -2,7 +2,7 @@
 #[derive(Debug, Clone, Copy)]
 pub struct KeyData {
     pub pressed: bool,
-    pub key: u8,
+    pub key: i32,
 }
 
 mod key_bindings {
@@ -29,21 +29,19 @@ pub mod keys {
     use super::key_bindings;
     use std::sync::LazyLock;
 
-    pub static KEY_RIGHT: LazyLock<u8> = LazyLock::new(|| unsafe { key_bindings::key_right } as u8);
-    pub static KEY_LEFT: LazyLock<u8> = LazyLock::new(|| unsafe { key_bindings::key_left } as u8);
-    pub static KEY_UP: LazyLock<u8> = LazyLock::new(|| unsafe { key_bindings::key_up } as u8);
-    pub static KEY_DOWN: LazyLock<u8> = LazyLock::new(|| unsafe { key_bindings::key_down } as u8);
-    pub static KEY_STRAFELEFT: LazyLock<u8> =
-        LazyLock::new(|| unsafe { key_bindings::key_strafeleft } as u8);
-    pub static KEY_STRAFERIGHT: LazyLock<u8> =
-        LazyLock::new(|| unsafe { key_bindings::key_straferight } as u8);
-    pub static KEY_FIRE: LazyLock<u8> = LazyLock::new(|| unsafe { key_bindings::key_fire } as u8);
-    pub static KEY_USE: LazyLock<u8> = LazyLock::new(|| unsafe { key_bindings::key_use } as u8);
-    /// When pressed, KEY_LEFT and KEY_RIGHT act like KEY_STRAFELEFT and KEY_STRAFERIGHT accordingly
-    pub static KEY_STRAFE: LazyLock<u8> =
-        LazyLock::new(|| unsafe { key_bindings::key_strafe } as u8);
-    pub static KEY_SPEED: LazyLock<u8> = LazyLock::new(|| unsafe { key_bindings::key_speed } as u8);
-
+    pub static KEY_RIGHT: LazyLock<i32> = LazyLock::new(|| unsafe { key_bindings::key_right });
+    pub static KEY_LEFT: LazyLock<i32> = LazyLock::new(|| unsafe { key_bindings::key_left });
+    pub static KEY_UP: LazyLock<i32> = LazyLock::new(|| unsafe { key_bindings::key_up });
+    pub static KEY_DOWN: LazyLock<i32> = LazyLock::new(|| unsafe { key_bindings::key_down });
+    pub static KEY_STRAFELEFT: LazyLock<i32> =
+        LazyLock::new(|| unsafe { key_bindings::key_strafeleft });
+    pub static KEY_STRAFERIGHT: LazyLock<i32> =
+        LazyLock::new(|| unsafe { key_bindings::key_straferight });
+    pub static KEY_FIRE: LazyLock<i32> = LazyLock::new(|| unsafe { key_bindings::key_fire });
+    pub static KEY_USE: LazyLock<i32> = LazyLock::new(|| unsafe { key_bindings::key_use });
+    // When pressed, KEY_LEFT and KEY_RIGHT act like KEY_STRAFELEFT and KEY_STRAFERIGHT accordingly
+    pub static KEY_STRAFE: LazyLock<i32> = LazyLock::new(|| unsafe { key_bindings::key_strafe });
+    pub static KEY_SPEED: LazyLock<i32> = LazyLock::new(|| unsafe { key_bindings::key_speed });
     pub static KEY_ESCAPE: u8 = 27;
     pub static KEY_ENTER: u8 = b'\r';
 

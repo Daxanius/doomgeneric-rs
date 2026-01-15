@@ -1,8 +1,8 @@
 // Example custom build script.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let ref dg_src_dir = std::path::PathBuf::from("doomgeneric/doomgeneric");
+    let dg_src_dir = &std::path::PathBuf::from("doomgeneric/doomgeneric");
     let mut dg_c_paths = vec![];
-    let mut dg_h_paths = vec![];
+    let mut dg_header_paths = vec![];
 
     // Find most c and h files
     for entry in std::fs::read_dir(dg_src_dir)? {
@@ -11,20 +11,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if filename.starts_with("doomgeneric")
                 || filename.contains("_allegro")
                 || filename.contains("_sdl")
-                || filename == "i_main.c" {
+                || filename == "i_main.c"
+            {
                 continue;
             }
 
-            if filename.ends_with(".h") {
-                dg_h_paths.push(dg_src_dir.join(filename));
-            } else if filename.ends_with(".c") {
+            if std::path::Path::new(filename)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("h"))
+            {
+                dg_header_paths.push(dg_src_dir.join(filename));
+            } else if std::path::Path::new(filename)
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("c"))
+            {
                 dg_c_paths.push(dg_src_dir.join(filename));
             }
         }
     }
     dg_c_paths
         .iter()
-        .chain(dg_h_paths.iter())
+        .chain(dg_header_paths.iter())
         .for_each(|path| println!("cargo:rerun-if-changed={}", path.to_str().unwrap()));
 
     cc::Build::new()

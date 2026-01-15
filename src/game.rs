@@ -1,9 +1,9 @@
 use crate::input::KeyData;
-use once_cell::sync::Lazy;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::ffi::CStr;
 use std::os::raw;
+use std::sync::LazyLock;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
@@ -32,12 +32,13 @@ static mut DG_ScreenBuffer: *const u32 = std::ptr::null();
 //static DG_ScreenBuffer: &[u32] = &[0u32; DOOMGENERIC_RESX * DOOMGENERIC_RESY];
 static mut SCREEN_BUFFER: RefCell<Option<Box<[u32]>>> = RefCell::new(None);
 static mut DOOM_HANDLER: RefCell<Option<Box<dyn DoomGeneric>>> = RefCell::new(None);
-static START_TIME: Lazy<Instant> = Lazy::new(|| Instant::now());
+static START_TIME: LazyLock<Instant> = LazyLock::new(Instant::now);
 
 #[no_mangle]
 extern "C" fn DG_Init() {
     unsafe {
-        *SCREEN_BUFFER.get_mut() = Some(Box::new([0u32; DOOMGENERIC_RESX * DOOMGENERIC_RESY]));
+        *SCREEN_BUFFER.get_mut() =
+            Some(vec![0u32; DOOMGENERIC_RESX * DOOMGENERIC_RESY].into_boxed_slice());
         // Setting DG_ScreenBuffer to where the new buffer is
         DG_ScreenBuffer = SCREEN_BUFFER.get_mut().as_ref().unwrap().as_ptr();
     }
@@ -49,8 +50,8 @@ extern "C" fn DG_GetKey(pressed: *mut raw::c_int, key: *mut raw::c_uchar) -> raw
         if let Some(keydata) = doom_box.get_key() {
             unsafe {
                 // Not tested yet!
-                *pressed = if keydata.pressed { 1 } else { 0 };
-                *key = keydata.key;
+                *pressed = i32::from(keydata.pressed);
+                *key = keydata.key as u8;
             }
             1
         } else {
@@ -69,7 +70,7 @@ extern "C" fn DG_GetTicksMs() -> u32 {
 
 #[no_mangle]
 extern "C" fn DG_SleepMs(ms: u32) {
-    sleep(Duration::from_millis(ms as u64));
+    sleep(Duration::from_millis(u64::from(ms)));
 }
 
 #[no_mangle]
