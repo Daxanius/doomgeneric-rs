@@ -44,7 +44,7 @@ pub mod keys {
     pub static KEY_SPEED: Lazy<u8> = Lazy::new(|| unsafe { key_bindings::key_speed } as u8);
 
     pub static KEY_ESCAPE: u8 = 27;
-    pub static KEY_ENTER: u8 = '\r' as u8;
+    pub static KEY_ENTER: u8 = b'\r';
 
     pub fn from_char(ascii_char: char) -> Option<u8> {
         if ascii_char.is_ascii() {
