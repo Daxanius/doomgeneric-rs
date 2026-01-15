@@ -34,6 +34,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .chain(dg_header_paths.iter())
         .for_each(|path| println!("cargo:rerun-if-changed={}", path.to_str().unwrap()));
 
+    if cfg!(target_os = "windows") {
+        println!("cargo:rustc-link-lib=user32");
+    }
+
     cc::Build::new()
         .flag("-w") // Disable warnings
         .define("CMAP256", None)
