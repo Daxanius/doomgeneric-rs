@@ -12,7 +12,7 @@ pub const DOOMGENERIC_RESX: usize = 320;
 pub const DOOMGENERIC_RESY: usize = 200;
 
 pub trait DoomGeneric {
-    fn draw_frame(&mut self, screen_buffer: &[u32], xres: usize, yres: usize);
+    fn draw_frame(&mut self, screen_buffer: &[u8], xres: usize, yres: usize);
     fn get_key(&mut self) -> Option<KeyData>;
     fn set_window_title(&mut self, title: &str);
 }
@@ -28,9 +28,9 @@ extern "C" {
 }
 
 #[no_mangle]
-static mut DG_ScreenBuffer: *const u32 = std::ptr::null();
+static mut DG_ScreenBuffer: *const u8 = std::ptr::null();
 //static DG_ScreenBuffer: &[u32] = &[0u32; DOOMGENERIC_RESX * DOOMGENERIC_RESY];
-static mut SCREEN_BUFFER: RefCell<Option<Box<[u32]>>> = RefCell::new(None);
+static mut SCREEN_BUFFER: RefCell<Option<Box<[u8]>>> = RefCell::new(None);
 static mut DOOM_HANDLER: RefCell<Option<Box<dyn DoomGeneric>>> = RefCell::new(None);
 static START_TIME: LazyLock<Instant> = LazyLock::new(Instant::now);
 
@@ -38,7 +38,7 @@ static START_TIME: LazyLock<Instant> = LazyLock::new(Instant::now);
 extern "C" fn DG_Init() {
     unsafe {
         *SCREEN_BUFFER.get_mut() =
-            Some(vec![0u32; DOOMGENERIC_RESX * DOOMGENERIC_RESY].into_boxed_slice());
+            Some(vec![0u8; DOOMGENERIC_RESX * DOOMGENERIC_RESY].into_boxed_slice());
         // Setting DG_ScreenBuffer to where the new buffer is
         DG_ScreenBuffer = SCREEN_BUFFER.get_mut().as_ref().unwrap().as_ptr();
     }

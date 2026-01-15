@@ -36,6 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     cc::Build::new()
         .flag("-w") // Disable warnings
+        .define("CMAP256", None)
         .files(dg_c_paths)
         .compile("doomgeneric");
 
