@@ -19,6 +19,7 @@ static mut C_ARGS: Option<Vec<*const i8>> = None;
 pub trait DoomGeneric {
     fn draw_frame(&mut self, screen_buffer: &[u8], xres: usize, yres: usize);
     fn get_key(&mut self) -> Option<KeyData>;
+    fn get_mouse_delta(&mut self) -> i16;
     fn set_window_title(&mut self, title: &str);
 }
 
@@ -94,6 +95,15 @@ extern "C" fn DG_SetWindowTitle(title: *const raw::c_char) {
         .expect("Can't convert title c string to rust string");
     if let Some(doom_box) = unsafe { DOOM_HANDLER.get_mut() }.as_mut() {
         doom_box.set_window_title(title);
+    }
+}
+
+#[no_mangle]
+extern "C" fn DG_GetMouseDelta() -> i16 {
+    if let Some(doom_box) = unsafe { DOOM_HANDLER.get_mut().as_mut() } {
+        doom_box.get_mouse_delta()
+    } else {
+        0
     }
 }
 
