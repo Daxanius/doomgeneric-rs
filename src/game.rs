@@ -1,7 +1,10 @@
 use crate::input::KeyData;
 use std::cell::RefCell;
 use std::convert::TryFrom;
+use std::ffi::c_char;
+use std::ffi::c_int;
 use std::ffi::CStr;
+use std::ffi::CString;
 use std::os::raw;
 use std::sync::LazyLock;
 use std::thread::sleep;
@@ -10,6 +13,8 @@ use std::time::{Duration, Instant};
 /// The resolution is hardcoded in the underlying library as macro definitions.
 pub const DOOMGENERIC_RESX: usize = 320;
 pub const DOOMGENERIC_RESY: usize = 200;
+
+static mut C_ARGS: Option<Vec<*const i8>> = None;
 
 pub trait DoomGeneric {
     fn draw_frame(&mut self, screen_buffer: &[u8], xres: usize, yres: usize);
@@ -92,9 +97,23 @@ extern "C" fn DG_SetWindowTitle(title: *const raw::c_char) {
     }
 }
 
-pub fn init(doom_impl: impl DoomGeneric + 'static) {
+pub fn init(doom_impl: impl DoomGeneric + 'static, args: &Vec<String>) {
     unsafe {
         *DOOM_HANDLER.get_mut() = Some(Box::new(doom_impl));
+
+        let args = std::env::args()
+            .map(|arg| CString::new(arg).unwrap())
+            .collect::<Vec<CString>>();
+
+        let c_args = args
+            .iter()
+            .map(|arg| arg.as_ptr())
+            .collect::<Vec<*const c_char>>();
+
+        myargc = c_args.len() as c_int;
+        myargv = c_args.as_ptr() as *mut *mut i8;
+
+        C_ARGS = Some(c_args);
 
         M_FindResponseFile();
         DG_Init();
