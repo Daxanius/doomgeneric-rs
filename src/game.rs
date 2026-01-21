@@ -1,19 +1,25 @@
 use crate::input::KeyData;
-use once_cell::sync::Lazy;
 use std::cell::RefCell;
 use std::convert::TryFrom;
+use std::ffi::c_char;
+use std::ffi::c_int;
 use std::ffi::CStr;
+use std::ffi::CString;
 use std::os::raw;
+use std::sync::LazyLock;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 /// The resolution is hardcoded in the underlying library as macro definitions.
-pub const DOOMGENERIC_RESX: usize = 640;
-pub const DOOMGENERIC_RESY: usize = 400;
+pub const DOOMGENERIC_RESX: usize = 320;
+pub const DOOMGENERIC_RESY: usize = 200;
+
+static mut C_ARGS: Option<Vec<*const i8>> = None;
 
 pub trait DoomGeneric {
-    fn draw_frame(&mut self, screen_buffer: &[u32], xres: usize, yres: usize);
+    fn draw_frame(&mut self, screen_buffer: &[u8], xres: usize, yres: usize);
     fn get_key(&mut self) -> Option<KeyData>;
+    fn get_mouse_delta(&mut self) -> i16;
     fn set_window_title(&mut self, title: &str);
 }
 
@@ -28,16 +34,17 @@ extern "C" {
 }
 
 #[no_mangle]
-static mut DG_ScreenBuffer: *const u32 = std::ptr::null();
+static mut DG_ScreenBuffer: *const u8 = std::ptr::null();
 //static DG_ScreenBuffer: &[u32] = &[0u32; DOOMGENERIC_RESX * DOOMGENERIC_RESY];
-static mut SCREEN_BUFFER: RefCell<Option<Box<[u32]>>> = RefCell::new(None);
+static mut SCREEN_BUFFER: RefCell<Option<Box<[u8]>>> = RefCell::new(None);
 static mut DOOM_HANDLER: RefCell<Option<Box<dyn DoomGeneric>>> = RefCell::new(None);
-static START_TIME: Lazy<Instant> = Lazy::new(|| Instant::now());
+static START_TIME: LazyLock<Instant> = LazyLock::new(Instant::now);
 
 #[no_mangle]
 extern "C" fn DG_Init() {
     unsafe {
-        *SCREEN_BUFFER.get_mut() = Some(Box::new([0u32; DOOMGENERIC_RESX * DOOMGENERIC_RESY]));
+        *SCREEN_BUFFER.get_mut() =
+            Some(vec![0u8; DOOMGENERIC_RESX * DOOMGENERIC_RESY].into_boxed_slice());
         // Setting DG_ScreenBuffer to where the new buffer is
         DG_ScreenBuffer = SCREEN_BUFFER.get_mut().as_ref().unwrap().as_ptr();
     }
@@ -49,8 +56,8 @@ extern "C" fn DG_GetKey(pressed: *mut raw::c_int, key: *mut raw::c_uchar) -> raw
         if let Some(keydata) = doom_box.get_key() {
             unsafe {
                 // Not tested yet!
-                *pressed = if keydata.pressed { 1 } else { 0 };
-                *key = keydata.key;
+                *pressed = i32::from(keydata.pressed);
+                *key = keydata.key as u8;
             }
             1
         } else {
@@ -69,7 +76,7 @@ extern "C" fn DG_GetTicksMs() -> u32 {
 
 #[no_mangle]
 extern "C" fn DG_SleepMs(ms: u32) {
-    sleep(Duration::from_millis(ms as u64));
+    sleep(Duration::from_millis(u64::from(ms)));
 }
 
 #[no_mangle]
@@ -91,9 +98,32 @@ extern "C" fn DG_SetWindowTitle(title: *const raw::c_char) {
     }
 }
 
-pub fn init(doom_impl: impl DoomGeneric + 'static) {
+#[no_mangle]
+extern "C" fn DG_GetMouseDelta() -> i16 {
+    if let Some(doom_box) = unsafe { DOOM_HANDLER.get_mut().as_mut() } {
+        doom_box.get_mouse_delta()
+    } else {
+        0
+    }
+}
+
+pub fn init(doom_impl: impl DoomGeneric + 'static, args: &Vec<String>) {
     unsafe {
         *DOOM_HANDLER.get_mut() = Some(Box::new(doom_impl));
+
+        let args = std::env::args()
+            .map(|arg| CString::new(arg).unwrap())
+            .collect::<Vec<CString>>();
+
+        let c_args = args
+            .iter()
+            .map(|arg| arg.as_ptr())
+            .collect::<Vec<*const c_char>>();
+
+        myargc = c_args.len() as c_int;
+        myargv = c_args.as_ptr() as *mut *mut i8;
+
+        C_ARGS = Some(c_args);
 
         M_FindResponseFile();
         DG_Init();
