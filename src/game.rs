@@ -1,3 +1,5 @@
+use crate::client::DoomGameSettingsRaw;
+use crate::client::DoomInputPacketRaw;
 use crate::input::KeyData;
 use std::cell::RefCell;
 use std::convert::TryFrom;
@@ -21,9 +23,14 @@ pub trait DoomGeneric {
     fn get_key(&mut self) -> Option<KeyData>;
     fn get_mouse_delta(&mut self) -> i16;
     fn set_window_title(&mut self, title: &str);
-}
 
-// TODO: Migrate to doomgeneric_Create
+    // Networking stuff
+    /// Fills the settings struct. Returns true (1) if successful.
+    fn get_settings(&mut self, settings: &mut DoomGameSettingsRaw);
+
+    /// Sends the local ticcmd to the Minecraft relay.
+    fn send_tic_cmd(&mut self, cmd: &DoomInputPacketRaw, maketic: i32, player_id: i32);
+}
 
 extern "C" {
     fn D_DoomMain(); // doomgeneric.h
@@ -34,11 +41,10 @@ extern "C" {
 }
 
 #[no_mangle]
-static mut DG_ScreenBuffer: *const u8 = std::ptr::null();
-//static DG_ScreenBuffer: &[u32] = &[0u32; DOOMGENERIC_RESX * DOOMGENERIC_RESY];
-static mut SCREEN_BUFFER: RefCell<Option<Box<[u8]>>> = RefCell::new(None);
-static mut DOOM_HANDLER: RefCell<Option<Box<dyn DoomGeneric>>> = RefCell::new(None);
-static START_TIME: LazyLock<Instant> = LazyLock::new(Instant::now);
+pub(crate) static mut DG_ScreenBuffer: *const u8 = std::ptr::null();
+pub(crate) static mut SCREEN_BUFFER: RefCell<Option<Box<[u8]>>> = RefCell::new(None);
+pub(crate) static mut DOOM_HANDLER: RefCell<Option<Box<dyn DoomGeneric>>> = RefCell::new(None);
+pub(crate) static START_TIME: LazyLock<Instant> = LazyLock::new(Instant::now);
 
 #[no_mangle]
 extern "C" fn DG_Init() {
@@ -57,7 +63,7 @@ extern "C" fn DG_GetKey(pressed: *mut raw::c_int, key: *mut raw::c_uchar) -> raw
             unsafe {
                 // Not tested yet!
                 *pressed = i32::from(keydata.pressed);
-                *key = keydata.key as u8;
+                *key = keydata.key;
             }
             1
         } else {

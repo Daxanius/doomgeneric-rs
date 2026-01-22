@@ -38,9 +38,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("cargo:rustc-link-lib=user32");
     }
 
-    cc::Build::new()
+    let mut builder = cc::Build::new();
+
+    #[cfg(debug_assertions)]
+    builder.debug(true);
+
+    builder
         .flag("-w") // Disable warnings
         .define("CMAP256", None)
+        .define("FEATURE_MULTIPLAYER", None)
         .files(dg_c_paths)
         .compile("doomgeneric");
 

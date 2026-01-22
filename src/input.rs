@@ -2,7 +2,7 @@
 #[derive(Debug, Clone, Copy)]
 pub struct KeyData {
     pub pressed: bool,
-    pub key: i32,
+    pub key: u8,
 }
 
 mod key_bindings {
