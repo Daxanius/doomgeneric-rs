@@ -12,7 +12,7 @@ categories = [ "external-ffi-bindings", "rendering" ]
 keywords = [ "doom", "ffi", "game" ]
 
 [features]
-default = ["cmap256"]
+default = []
 cmap256 = [] 
 window = ["dep:minifb"]
 
