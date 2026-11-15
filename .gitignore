@@ -8,4 +8,5 @@
 /Cargo.lock
 
 # Dev environment
+*.[Ww][Aa][Dd]
 .direnv
