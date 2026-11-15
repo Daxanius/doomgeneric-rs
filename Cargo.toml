@@ -11,9 +11,18 @@ homepage = "https://crates.io/crates/doomgeneric"
 categories = [ "external-ffi-bindings", "rendering" ]
 keywords = [ "doom", "ffi", "game" ]
 
-[build-dependencies]
-cc = "1.0"
-
 [features]
 default = ["cmap256"]
 cmap256 = [] 
+window = ["dep:minifb"]
+
+[dependencies]
+minifb = { version = "0.28", optional = true }
+
+[[bin]]
+name = "doomgeneric-play"
+path = "src/main.rs"
+required-features = ["window"]
+
+[build-dependencies]
+cc = "1.0"

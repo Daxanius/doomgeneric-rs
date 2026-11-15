@@ -59,7 +59,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     build.compile("doomgeneric");
-
-    //println!("cargo:rustc-link-lib=static=doomgeneric");
     Ok(())
 }

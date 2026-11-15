@@ -102,6 +102,16 @@ extern "C" fn DG_GetMouseDelta() -> i16 {
     }
 }
 
+#[cfg(feature = "cmap256")]
+extern "C" {
+    static colors: [u32; 256];
+}
+
+#[cfg(feature = "cmap256")]
+pub fn palette() -> [u32; 256] {
+    unsafe { colors }
+}
+
 pub fn init<S: AsRef<str>>(args: &[S], doom_impl: impl DoomGeneric + 'static) {
     let cstrings: Vec<CString> = args
         .iter()

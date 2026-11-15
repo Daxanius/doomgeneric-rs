@@ -9,6 +9,17 @@
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
+
+      # Libraries minifb loads at runtime
+      runtimeLibs = with pkgs; [
+        libX11
+        libXcursor
+        libXi
+        libXrandr
+        libxkbcommon
+        wayland
+        libGL
+      ];
     in
     {
       devShells.${system}.default = pkgs.mkShell {
@@ -28,6 +39,8 @@
         ];
 
         
+        LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath runtimeLibs;
+
         shellHook = ''
           export LIBCLANG_PATH=${pkgs.llvmPackages.libclang.lib}/lib
           export BINDGEN_EXTRA_CLANG_ARGS="--sysroot=${pkgs.stdenv.cc.libc.dev}"
