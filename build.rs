@@ -2,12 +2,12 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rerun-if-env-changed=DOOMGENERIC_RESX");
     println!("cargo:rerun-if-env-changed=DOOMGENERIC_RESY");
-    let resx = std::env::var("DOOMGENERIC_RESX").unwrap_or_else(|_| "640".to_string());
-    let resy = std::env::var("DOOMGENERIC_RESY").unwrap_or_else(|_| "400".to_string());
-    println!("cargo:rustc-env=DOOMGENERIC_RESX={}", resx);
-    println!("cargo:rustc-env=DOOMGENERIC_RESY={}", resy);
+    let resx = std::env::var("DOOMGENERIC_RESX").unwrap_or_else(|_| "320".to_string());
+    let resy = std::env::var("DOOMGENERIC_RESY").unwrap_or_else(|_| "200".to_string());
+    println!("cargo:rustc-env=DOOMGENERIC_RESX={resx}");
+    println!("cargo:rustc-env=DOOMGENERIC_RESY={resy}");
 
-    let ref dg_src_dir = std::path::PathBuf::from("doomgeneric/doomgeneric");
+    let dg_src_dir = &std::path::PathBuf::from("doomgeneric/doomgeneric");
     let mut dg_c_paths = vec![];
     let mut dg_header_paths = vec![];
 
@@ -47,13 +47,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("cargo:rustc-link-lib=user32");
     }
 
-    cc::Build::new()
-        .flag("-w") // Disable warnings
-        .define("CMAP256", None)
+    let cmap256 = std::env::var_os("CARGO_FEATURE_CMAP256").is_some();
+    let mut build = cc::Build::new();
+    build
         .define("DOOMGENERIC_RESX", resx.as_str())
         .define("DOOMGENERIC_RESY", resy.as_str())
-        .files(dg_c_paths)
-        .compile("doomgeneric");
+        .files(dg_c_paths);
+
+    if cmap256 {
+        build.define("CMAP256", None);
+    }
+
+    build.compile("doomgeneric");
 
     //println!("cargo:rustc-link-lib=static=doomgeneric");
     Ok(())

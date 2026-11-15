@@ -1,11 +1,15 @@
 use crate::input::KeyData;
-use once_cell::sync::Lazy;
 use std::convert::TryFrom;
 use std::ffi::{CStr, CString};
 use std::os::raw;
 use std::ptr::addr_of_mut;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
+
+#[cfg(feature = "cmap256")]
+pub type Pixel = u8;
+#[cfg(not(feature = "cmap256"))]
+pub type Pixel = u32;
 
 /// Resolution defined as overridable macros in the underlying C library.
 /// Override at build time via `DOOMGENERIC_RESX` / `DOOMGENERIC_RESY` env vars.
@@ -19,7 +23,7 @@ pub const DOOMGENERIC_RESY: usize = match usize::from_str_radix(env!("DOOMGENERI
 };
 
 pub trait DoomGeneric {
-    fn draw_frame(&mut self, screen_buffer: &[u8], xres: usize, yres: usize);
+    fn draw_frame(&mut self, screen_buffer: &[Pixel], xres: usize, yres: usize);
     fn get_key(&mut self) -> Option<KeyData>;
     fn get_mouse_delta(&mut self) -> i16;
     fn set_window_title(&mut self, title: &str);
@@ -28,11 +32,11 @@ pub trait DoomGeneric {
 extern "C" {
     fn doomgeneric_Create(argc: raw::c_int, argv: *mut *mut raw::c_char);
     fn doomgeneric_Tick();
-    static mut DG_ScreenBuffer: *mut u32;
+    static mut DG_ScreenBuffer: *mut Pixel;
 }
 
 static mut DOOM_HANDLER: Option<Box<dyn DoomGeneric>> = None;
-static START_TIME: Lazy<Instant> = Lazy::new(|| Instant::now());
+static START_TIME: std::sync::LazyLock<Instant> = std::sync::LazyLock::new(Instant::now);
 
 #[no_mangle]
 extern "C" fn DG_Init() {}
@@ -44,7 +48,7 @@ extern "C" fn DG_GetKey(pressed: *mut raw::c_int, key: *mut raw::c_uchar) -> raw
             unsafe {
                 // Not tested yet!
                 *pressed = i32::from(keydata.pressed);
-                *key = keydata.key as u8;
+                *key = keydata.key;
             }
             1
         } else {
@@ -91,7 +95,7 @@ extern "C" fn DG_SetWindowTitle(title: *const raw::c_char) {
 
 #[no_mangle]
 extern "C" fn DG_GetMouseDelta() -> i16 {
-    if let Some(doom_box) = unsafe { DOOM_HANDLER.get_mut().as_mut() } {
+    if let Some(doom_box) = unsafe { (*addr_of_mut!(DOOM_HANDLER)).as_mut() } {
         doom_box.get_mouse_delta()
     } else {
         0
@@ -105,7 +109,7 @@ pub fn init<S: AsRef<str>>(args: &[S], doom_impl: impl DoomGeneric + 'static) {
         .collect();
     let mut argv_ptrs: Vec<*mut raw::c_char> = cstrings
         .iter()
-        .map(|cs| cs.as_ptr() as *mut raw::c_char)
+        .map(|cs| cs.as_ptr().cast_mut())
         .collect();
     argv_ptrs.push(std::ptr::null_mut());
     let argc = cstrings.len() as raw::c_int;
