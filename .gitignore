@@ -4,9 +4,9 @@
 .idea
 
 # Rust specific
-/target
-/Cargo.lock
+target/
 
 # Dev environment
 *.[Ww][Aa][Dd]
 .direnv
+.savegame

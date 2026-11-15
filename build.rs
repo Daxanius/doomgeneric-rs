@@ -7,7 +7,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rustc-env=DOOMGENERIC_RESX={resx}");
     println!("cargo:rustc-env=DOOMGENERIC_RESY={resy}");
 
-    let dg_src_dir = &std::path::PathBuf::from("doomgeneric/doomgeneric");
+    let dg_src_dir = &std::path::PathBuf::from("doomgeneric/src");
     let mut dg_c_paths = vec![];
     let mut dg_header_paths = vec![];
 
